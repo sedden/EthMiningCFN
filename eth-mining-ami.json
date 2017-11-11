@@ -1,0 +1,50 @@
+{
+    "variables": {
+        "aws_access_key": "{{env `AWS_ACCESS_KEY_ID`}}",
+        "aws_secret_key": "{{env `AWS_SECRET_ACCESS_KEY`}}",
+        "region":         "us-east-1"
+    },
+    "builders": [
+        {
+            "access_key": "{{user `aws_access_key`}}",
+            "ami_name": "ethminer-{{timestamp}}",
+            "instance_type": "t2.micro",
+            "region": "eu-central-1",
+            "ami_regions": ["us-east-1", "us-east-2", "us-west-1", "us-west-2", "ap-northeast-1", "eu-west-1", "eu-west-2"],
+            "secret_key": "{{user `aws_secret_key`}}",
+            "source_ami_filter": {
+              "filters": {
+              "virtualization-type": "hvm",
+              "name": "ubuntu/images/*ubuntu-xenial-16.04-amd64-server-*",
+              "root-device-type": "ebs"
+              },
+              "owners": ["099720109477"],
+              "most_recent": true
+            },
+            "ssh_username": "ubuntu",
+            "type": "amazon-ebs"
+        }
+    ],
+    "provisioners": [
+        {
+            "type": "shell",
+            "inline":[
+                "sudo apt-get update",
+                "wget -q https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64-deb",
+                "sudo dpkg -i cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64-deb",
+                "sudo apt-key add /var/cuda-repo-9-0-local/7fa2af80.pub",
+                "sudo apt-get update",
+                "sudo apt-get -y --no-install-recommends install cuda cmake libidn11-dev",
+                "git clone https://github.com/ethereum-mining/ethminer.git ethminer",
+                "cd ethminer",
+                "git checkout v0.12.0",
+                "mkdir build",
+                "cd build",
+                "cmake .. -DETHASHCUDA=ON",
+                "cmake --build .",
+                "sudo make install",
+                "echo Done"
+            ]
+        }
+    ]
+}
